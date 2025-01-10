@@ -28,7 +28,7 @@ public class App {
                     while (true) {
                         PrintUserInfo(user);
                         System.out.println("Для смены пользователя введите logout.");
-                        System.out.println("Для добавления категории доходов введите название через пробел.");
+                        System.out.println("Для добавления категории доходов введите название.");
                         System.out.println("Для добавления категории расходов введите название и лимит через пробел.");
                         System.out.println("Для добавления операции введите +/-, сумму и категорию через пробел.");
                         input = in.nextLine();
@@ -38,18 +38,15 @@ public class App {
                             if (input.equals("logout")) break;
                             else if (parts.length == 1) user.addCategory(parts[0]);
                             else if (parts.length == 2) user.addCategory(parts[0], Double.parseDouble(parts[1]));
-//                            {
-//                                Double limit;
-//                                try {
-//                                    limit = Double.parseDouble(parts[1]);
-//                                    user.addCategory(parts[0], limit);
-//                                }
-//                                catch (NumberFormatException e) {
-//                                    user.renameCategory(parts[0], parts[1]);
-//                                }
-//                            }
-                            else if (parts.length == 3)
+                            else if (parts.length == 3) {
                                 user.addAmount(parts[0].charAt(0), Double.parseDouble(parts[1]), parts[2]);
+//                                try {
+//                                    Double.parseDouble(parts[1]);
+//                                    user.addAmount(parts[0].charAt(0), Double.parseDouble(parts[1]), parts[2]);
+//                                } catch (NumberFormatException e) {
+//                                    user.renameCategory(parts[0].charAt(0), parts[1], parts[2]);
+//                                }
+                            }
                         } catch (Exception e) {
                             System.out.println("Ошибка ввода: " + e.getMessage());
                         }
@@ -62,20 +59,22 @@ public class App {
 
     private static void PrintUserInfo(User user) {
         System.out.println("┌───────────────────────────────────────────────┐");
-        System.out.println("│ Общий доход: ");
+        System.out.println("│ Общий доход: " + user.sum('+'));
         System.out.println("├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┤");
         System.out.println("│ Доходы по категориям:");
         for (Category c : user.getIncomes()) {
             System.out.println("│ + " + c.getName() + ": " + c.getSum());
         }
         System.out.println("├───────────────────────────────────────────────┤");
-        System.out.println("│ Общие расходы: ");
+        System.out.println("│ Общие расходы: " + user.sum('-'));
         System.out.println("├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┤");
         System.out.println("│ Расходы по категориям:");
         for (Category c : user.getOutcomes()) {
             double remainder = c.getLimit() - c.getSum();
             System.out.println("│ - " + c.getName() + ": " + c.getSum() + ". Оставшийся бюджет: " + remainder);
         }
+        System.out.println("├───────────────────────────────────────────────┤");
+        System.out.println("│ Остаток: " + (user.sum('+') - user.sum('-')));
         System.out.println("└───────────────────────────────────────────────┘");
     }
 

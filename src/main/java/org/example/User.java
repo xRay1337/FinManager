@@ -90,11 +90,20 @@ public class User {
         category.add(amount);
     }
 
+    public double sum(char type) {
+        List<Category> categories = getCategories(type);
+        double sum = 0;
+
+        for (Category c : categories) sum += c.getSum();
+
+        return sum;
+    }
+
     public void renameCategory(char type, String categoryName, String newName) {
         List<Category> categories = getCategories(type);
 
         Category category = findCategoryByName(categories, categoryName);
 
-        if (category == null) category.setName(newName);
+        if (category != null) category.setName(newName);
     }
 }
