@@ -22,8 +22,9 @@ public class App {
             while (true) {
                 System.out.println("Введите логин и пароль через пробел. Для выхода exit.");
 
-                String input = in.nextLine();
+                String input = in.nextLine().replaceAll("\\s+", " ").trim();
                 String[] parts = input.split(" ");
+                System.out.println(input);
 
                 if (input.equals("exit")) break;
 
@@ -41,7 +42,7 @@ public class App {
                             System.out.println("Для добавления категории доходов введите название.");
                             System.out.println("Для добавления категории расходов введите название и лимит через пробел.");
                             System.out.println("Для добавления операции введите +/-, сумму и категорию через пробел.");
-                            input = in.nextLine();
+                            input = in.nextLine().replaceAll("\\s+", " ").trim();
                             parts = input.split(" ");
 
                             try {
