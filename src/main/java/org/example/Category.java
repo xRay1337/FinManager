@@ -34,8 +34,13 @@ public class Category {
         this.limit = limit;
     }
 
+    public List<Double> getAmounts() {
+        return amounts;
+    }
+
     public boolean add(double amount) {
-        return amounts.add(amount);
+        amounts.add(amount);
+        return getSum() <= limit;
     }
 
     public double getSum() {

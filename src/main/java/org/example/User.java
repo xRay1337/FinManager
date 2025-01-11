@@ -80,14 +80,16 @@ public class User {
         return addCategory('+', name, 0);
     }
 
-    public void addAmount(char type, double amount, String categoryName) {
+    public String addAmount(char type, double amount, String categoryName) {
         List<Category> categories = getCategories(type);
 
         Category category = findCategoryByName(categories, categoryName);
 
         if (category == null) category = addCategory(type, categoryName, 0);
 
-        category.add(amount);
+        boolean inLimit = category.add(amount);
+
+        return type == '-' && !inLimit  ? "! Превышен лимит по категории «" + categoryName + "»" : "";
     }
 
     public double sum(char type) {

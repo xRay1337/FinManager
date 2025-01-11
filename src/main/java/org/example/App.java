@@ -1,8 +1,13 @@
 package org.example;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.*;
 
 public class App {
     public static void main(String[] args) {
@@ -39,13 +44,10 @@ public class App {
                             else if (parts.length == 1) user.addCategory(parts[0]);
                             else if (parts.length == 2) user.addCategory(parts[0], Double.parseDouble(parts[1]));
                             else if (parts.length == 3) {
-                                user.addAmount(parts[0].charAt(0), Double.parseDouble(parts[1]), parts[2]);
-//                                try {
-//                                    Double.parseDouble(parts[1]);
-//                                    user.addAmount(parts[0].charAt(0), Double.parseDouble(parts[1]), parts[2]);
-//                                } catch (NumberFormatException e) {
-//                                    user.renameCategory(parts[0].charAt(0), parts[1], parts[2]);
-//                                }
+                                String amount = parts[1].replaceAll("[KkКк]", "000");
+                                String message =
+                                        user.addAmount(parts[0].charAt(0), Double.parseDouble(amount), parts[2]);
+                                if (!message.isEmpty()) System.out.println(message);
                             }
                         } catch (Exception e) {
                             System.out.println("Ошибка ввода: " + e.getMessage());
@@ -55,27 +57,73 @@ public class App {
             }
         }
 
+        saveUsersToFile(users, "data.json");
     }
 
     private static void PrintUserInfo(User user) {
-        System.out.println("┌───────────────────────────────────────────────┐");
+        double totalRemainder = user.sum('+') - user.sum('-');
+        if (totalRemainder < 0) System.out.println("! Расходы превысили доходы");
+        System.out.println("┌─────────────────────────────────────────────────┐");
         System.out.println("│ Общий доход: " + user.sum('+'));
-        System.out.println("├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┤");
+        System.out.println("├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┤");
         System.out.println("│ Доходы по категориям:");
         for (Category c : user.getIncomes()) {
             System.out.println("│ + " + c.getName() + ": " + c.getSum());
         }
-        System.out.println("├───────────────────────────────────────────────┤");
+        System.out.println("├─────────────────────────────────────────────────┤");
         System.out.println("│ Общие расходы: " + user.sum('-'));
-        System.out.println("├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┤");
+        System.out.println("├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┤");
         System.out.println("│ Расходы по категориям:");
         for (Category c : user.getOutcomes()) {
             double remainder = c.getLimit() - c.getSum();
-            System.out.println("│ - " + c.getName() + ": " + c.getSum() + ". Оставшийся бюджет: " + remainder);
+            System.out.println("│ - " + c.getName() + ": " + c.getSum() + ". Остаток: " + remainder);
         }
-        System.out.println("├───────────────────────────────────────────────┤");
-        System.out.println("│ Остаток: " + (user.sum('+') - user.sum('-')));
-        System.out.println("└───────────────────────────────────────────────┘");
+        System.out.println("├─────────────────────────────────────────────────┤");
+        System.out.println("│ Общий остаток: " + totalRemainder);
+        System.out.println("└─────────────────────────────────────────────────┘");
+    }
+
+    private static void saveUsersToFile(Collection<User> users, String filePath) {
+        JSONArray userList = new JSONArray();
+
+        for (User user : users) {
+            JSONObject userDetails = new JSONObject();
+            userDetails.put("login", user.getLogin());
+            userDetails.put("password", user.getPassword());
+
+            JSONArray incomesArray = new JSONArray();
+
+            for (Category i : user.getIncomes()) {
+                JSONObject incomeDetails = new JSONObject();
+                incomeDetails.put("name", i.getName());
+                incomeDetails.put("limit", i.getLimit());
+                incomeDetails.put("amounts", i.getAmounts());
+                incomesArray.add(incomeDetails);
+            }
+
+            userDetails.put("incomes", incomesArray);
+
+            JSONArray outcomesArray = new JSONArray();
+
+            for (Category o : user.getOutcomes()) {
+                JSONObject incomeDetails = new JSONObject();
+                incomeDetails.put("name", o.getName());
+                incomeDetails.put("limit", o.getLimit());
+                incomeDetails.put("amounts", o.getAmounts());
+                outcomesArray.add(incomeDetails);
+            }
+
+            userDetails.put("outcomes", outcomesArray);
+
+            userList.add(userDetails);
+
+            try (FileWriter file = new FileWriter(filePath)) {
+                file.write(userList.toJSONString());
+                file.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private static User GetUser(List<User> users, String login, String password) {
