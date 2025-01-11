@@ -18,6 +18,12 @@ public class Category {
         this(name, 0);
     }
 
+    public Category(String name, double limit, List<Double> amounts) {
+        this(name, limit);
+
+        this.amounts = amounts == null ? new ArrayList<>() : amounts;
+    }
+
     public String getName() {
         return name;
     }

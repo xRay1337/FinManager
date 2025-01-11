@@ -5,6 +5,8 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
@@ -12,52 +14,58 @@ import java.util.*;
 public class App {
     public static void main(String[] args) {
         Scanner in = new Scanner(System.in);
-        List<User> users = new ArrayList<>();
+        String filePath = "data.json";
+        File f = new File(filePath);
+        List<User> users = (f.exists() && !f.isDirectory()) ? loadUsersFromFile(filePath) : new ArrayList<>();
 
-        while (true) {
-            System.out.println("Введите логин и пароль через пробел. Для выхода exit.");
+        try {
+            while (true) {
+                System.out.println("Введите логин и пароль через пробел. Для выхода exit.");
 
-            String input = in.nextLine();
-            String[] parts = input.split(" ");
+                String input = in.nextLine();
+                String[] parts = input.split(" ");
 
-            if (input.equals("exit")) break;
+                if (input.equals("exit")) break;
 
-            if (parts.length == 2) {
-                String login = parts[0];
-                String password = parts[1];
-                User user = GetUser(users, login, password);
+                if (parts.length == 2) {
+                    String login = parts[0];
+                    String password = parts[1];
+                    User user = GetUser(users, login, password);
 
-                if (user == null) {
-                    System.out.println("Неверный пароль.");
-                } else {
-                    while (true) {
-                        PrintUserInfo(user);
-                        System.out.println("Для смены пользователя введите logout.");
-                        System.out.println("Для добавления категории доходов введите название.");
-                        System.out.println("Для добавления категории расходов введите название и лимит через пробел.");
-                        System.out.println("Для добавления операции введите +/-, сумму и категорию через пробел.");
-                        input = in.nextLine();
-                        parts = input.split(" ");
+                    if (user == null) {
+                        System.out.println("Неверный пароль.");
+                    } else {
+                        while (true) {
+                            PrintUserInfo(user);
+                            System.out.println("Для смены пользователя введите logout.");
+                            System.out.println("Для добавления категории доходов введите название.");
+                            System.out.println("Для добавления категории расходов введите название и лимит через пробел.");
+                            System.out.println("Для добавления операции введите +/-, сумму и категорию через пробел.");
+                            input = in.nextLine();
+                            parts = input.split(" ");
 
-                        try {
-                            if (input.equals("logout")) break;
-                            else if (parts.length == 1) user.addCategory(parts[0]);
-                            else if (parts.length == 2) user.addCategory(parts[0], Double.parseDouble(parts[1]));
-                            else if (parts.length == 3) {
-                                String amount = parts[1].replaceAll("[KkКк]", "000");
-                                String message =
-                                        user.addAmount(parts[0].charAt(0), Double.parseDouble(amount), parts[2]);
-                                if (!message.isEmpty()) System.out.println(message);
+                            try {
+                                if (input.equals("logout")) break;
+                                else if (parts.length == 1) user.addCategory(parts[0]);
+                                else if (parts.length == 2) {
+                                    String amount = parts[1].replaceAll("[KkКк]", "000");
+                                    user.addCategory(parts[0], Double.parseDouble(amount));
+                                } else if (parts.length == 3) {
+                                    String amount = parts[1].replaceAll("[KkКк]", "000");
+                                    String message =
+                                            user.addAmount(parts[0].charAt(0), Double.parseDouble(amount), parts[2]);
+                                    if (!message.isEmpty()) System.out.println(message);
+                                }
+                            } catch (Exception e) {
+                                System.out.println("Ошибка ввода: " + e.getMessage());
                             }
-                        } catch (Exception e) {
-                            System.out.println("Ошибка ввода: " + e.getMessage());
                         }
                     }
                 }
             }
+        } finally {
+            saveUsersToFile(users, filePath);
         }
-
-        saveUsersToFile(users, "data.json");
     }
 
     private static void PrintUserInfo(User user) {
@@ -81,6 +89,73 @@ public class App {
         System.out.println("├─────────────────────────────────────────────────┤");
         System.out.println("│ Общий остаток: " + totalRemainder);
         System.out.println("└─────────────────────────────────────────────────┘");
+    }
+
+    private static List<User> loadUsersFromFile(String filePath) {
+        List<User> users = new ArrayList<>();
+        JSONParser jsonParser = new JSONParser();
+
+        try (FileReader reader = new FileReader(filePath)) {
+            Object obj = jsonParser.parse(reader);
+            JSONArray userList = (JSONArray) obj;
+
+            for (Object userObj : userList) {
+                JSONObject userJson = (JSONObject) userObj;
+                String userLogin = (String) userJson.get("login");
+                String userPassword = (String) userJson.get("password");
+
+                JSONArray incomeArray = (JSONArray) userJson.get("incomes");
+
+                List<Category> incomes = new ArrayList<>();
+
+                for (Object incomeObj : incomeArray) {
+                    JSONObject incomeJson = (JSONObject) incomeObj;
+
+                    String name = (String) incomeJson.get("name");
+                    double limit = (double) incomeJson.get("limit");
+
+                    List<Double> amounts = new ArrayList<>();
+
+                    JSONArray incomeOpsArray = (JSONArray) incomeJson.get("amounts");
+
+                    for (Object o : incomeOpsArray) {
+                        amounts.add(((Number) o).doubleValue());
+                    }
+
+                    Category category = new Category(name, limit, amounts);
+                    incomes.add(category);
+                }
+
+                JSONArray outcomeArray = (JSONArray) userJson.get("outcomes");
+
+                List<Category> outcomes = new ArrayList<>();
+
+                for (Object outcomeObj : outcomeArray) {
+                    JSONObject outcomeJson = (JSONObject) outcomeObj;
+
+                    String name = (String) outcomeJson.get("name");
+                    double limit = (double) outcomeJson.get("limit");
+
+                    List<Double> amounts = new ArrayList<>();
+
+                    JSONArray outcomeOpsArray = (JSONArray) outcomeJson.get("amounts");
+
+                    for (Object o : outcomeOpsArray) {
+                        amounts.add(((Number) o).doubleValue());
+                    }
+
+                    Category category = new Category(name, limit, amounts);
+                    outcomes.add(category);
+                }
+
+                User user = new User(userLogin, userPassword, incomes, outcomes);
+                users.add(user);
+            }
+        } catch (IOException | ParseException e) {
+            e.printStackTrace();
+        }
+
+        return users;
     }
 
     private static void saveUsersToFile(Collection<User> users, String filePath) {

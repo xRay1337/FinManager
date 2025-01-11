@@ -34,6 +34,12 @@ public class User {
         outcomes.add(new Category("прочее"));
     }
 
+    public User(String login, String password, List<Category> incomes, List<Category> outcomes) {
+        this(login, password);
+        this.incomes = incomes;
+        this.outcomes = outcomes;
+    }
+
     private List<Category> getCategories(char type) {
         if (type == '+') {
             return incomes;
